@@ -1,0 +1,172 @@
+version: '3'
+services:
+
+  # API-Gateway
+  gateway:
+    container_name: gateway-dev-service-1
+    user: ${USER_NAME}
+    build:
+      context: ./../gateway
+      dockerfile: ./../gateway/Dockerfile.dev
+      args:
+        - GROUP_ID=${GROUP_ID}
+        - GROUP_NAME=${GROUP_NAME}
+        - USER_ID=${USER_ID}
+        - USER_NAME=${USER_NAME}
+    tty: true
+    ports:
+      - "8080:80"
+    volumes:
+      - ./../gateway:/go/src/github.com/yaroyan/gms/gateway
+
+  # Font-end-React
+  client:
+    container_name: client-dev-service-1
+    user: node
+    environment:
+      NODE_ENV: development
+    build:
+      context: ./../client
+      dockerfile: ./../client/Dockerfile.dev
+    ports:
+      - "3000:3000"
+    tty: true
+    volumes:
+      - ./../client:/usr/src
+    # command: sh -c "yarn start"
+
+  # # Wasm
+  # wasm:
+  #   contaner_name: wasm-dev-service-1
+  #   build:
+  #     context: ./../wasm
+  #     dockerfile: ./../wasm/Dockerfile.dev
+  #   volumes:
+  #     - ./../wasm:/usr/src/app
+
+  # Auth
+  auth:
+    container_name: auth-dev-service-1
+    user: ${USER_NAME}
+    build:
+      context: ./../auth
+      dockerfile: ./../auth/Dockerfile.dev
+      args:
+        - GROUP_ID=${GROUP_ID}
+        - GROUP_NAME=${GROUP_NAME}
+        - USER_ID=${USER_ID}
+        - USER_NAME=${USER_NAME}
+    expose:
+      - 80
+    tty: true
+    volumes:
+      - ./../auth:/go/src/github.com/yaroyan/gms/auth
+    environment:
+      DSN: "host=postgres port=5432 user=postgres password=password dbname=users sslmode=disable timezone=UTC connect_timeout=5"
+
+  # Auth-Postgres-DB
+  postgres:
+    image: 'postgres:15-alpine'
+    container_name: auth-dev-service-1-postgres-dev-service-1
+    expose:
+      - 5432
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: users
+    volumes:
+      - ./db-data/postgres/:/var/lib/postgresql/data/
+
+  # Logger
+  logger:
+    container_name: logger-dev-service-1
+    user: ${USER_NAME}
+    build:
+      context: ./../logger
+      dockerfile: ./../logger/Dockerfile.dev
+      args:
+        - GROUP_ID=${GROUP_ID}
+        - GROUP_NAME=${GROUP_NAME}
+        - USER_ID=${USER_ID}
+        - USER_NAME=${USER_NAME}
+    tty: true
+    expose:
+      - 80
+      - 5001
+      - 50001
+    volumes:
+      - ./../logger:/go/src/github.com/yaroyan/gms/logger
+
+  mongo:
+    container_name: logger-dev-service-1-mongo-dev-service-1
+    image: 'mongo:5.0.14'
+    expose:
+      - 27017
+    environment:
+      MONGO_INITDB_DATABASE: logs
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - ./db-data/mongo/:/data/db
+
+  # E-Mail
+  mailer:
+    container_name: mailer-dev-service-1
+    user: ${USER_NAME}
+    build:
+      context: ./../mailer
+      dockerfile: ./../mailer/Dockerfile.dev
+      args:
+        - GROUP_ID=${GROUP_ID}
+        - GROUP_NAME=${GROUP_NAME}
+        - USER_ID=${USER_ID}
+        - USER_NAME=${USER_NAME}
+    tty: true
+    expose:
+      - 80
+    environment:
+      MAIL_DOMAIN: localhost
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      MAIL_ENCRYPTION: none
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      FROM_NAME: "John Smith"
+      FROM_ADDRESS: john.smith@example.com
+    volumes:
+      - ./../mailer:/go/src/github.com/yaroyan/gms/mailer
+
+  mailhog:
+    container_name: mailhog-dev-service-1
+    image: 'mailhog/mailhog:latest'
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  # Listener
+  listener:
+    container_name: listener-dev-service-1
+    user: ${USER_NAME}
+    build:
+      context: ./../listener
+      dockerfile: ./../listener/Dockerfile.dev
+      args:
+        - GROUP_ID=${GROUP_ID}
+        - GROUP_NAME=${GROUP_NAME}
+        - USER_ID=${USER_ID}
+        - USER_NAME=${USER_NAME}
+    tty: true
+    expose:
+      - 80
+    volumes:
+      - ./../listener:/go/src/github.com/yaroyan/gms/listener
+
+  # RabbitMQ
+  rabbitmq:
+    image: 'rabbitmq:3.11-alpine'
+    container_name: rabbitmq-dev-service-1
+    expose:
+      - 5672
+    volumes:
+      - ./db-data/rabbitmq/:/var/lib/rabbitmq/
